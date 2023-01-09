@@ -15,20 +15,25 @@ import {
   Textarea,
   useDisclosure
 } from '@chakra-ui/react';
-import { TbFolder, TbHelp, TbSettings } from 'react-icons/tb';
+import { TbFolder, TbSettings } from 'react-icons/tb';
 
 import React from 'react';
+import RootContext from '../store';
+import { SettingsItem } from './SettingsItem';
 import { invoke } from '@tauri-apps/api';
 import { open } from '@tauri-apps/api/dialog';
+import { parseIpfsGateways } from '../scripts/ipfs';
 import { useForm } from 'react-hook-form';
 import { useTranslation } from 'react-i18next';
-import { SettingsItem } from './SettingsItem';
-import RootContext from '../store';
-import { parseIpfsGateways } from '../scripts/ipfs';
 
 interface Config {
   index_dir: string;
   ipfs_gateways: string;
+}
+
+interface TauriConfig {
+  index_dir: string;
+  ipfs_gateways: string[];
 }
 
 const Settings: React.FC = () => {
@@ -48,25 +53,23 @@ const Settings: React.FC = () => {
   React.useEffect(() => {
     isOpen &&
       invoke('get_config').then((conf) => {
-        const config = conf as {
-          index_dir: string;
-          ipfs_gateways: string[];
-        };
+        const config = conf as TauriConfig;
         setValue('index_dir', config.index_dir, { shouldValidate: true });
         setValue('ipfs_gateways', config.ipfs_gateways.join('\n'), { shouldValidate: true });
+        rootContext.setIpfsGateways(config.ipfs_gateways);
       });
   }, [isOpen]);
 
   const onSubmit = async (newConfig: Config) => {
     setSubmitting(true);
 
-    const ipfsGateways: string[]= parseIpfsGateways(newConfig.ipfs_gateways);
-    const config = {
-      index_dir: newConfig.index_dir,
+    const ipfsGateways: string[] = parseIpfsGateways(newConfig.ipfs_gateways);
+    const tauriConfig = {
+      ...newConfig,
       ipfs_gateways: ipfsGateways
     };
-    await invoke('set_config', { newConfig: config });
-    rootContext.ipfs_gateways = ipfsGateways;
+    await invoke('set_config', { newConfig: tauriConfig });
+    rootContext.setIpfsGateways(ipfsGateways);
     onClose();
     setSubmitting(false);
   };
@@ -96,7 +99,9 @@ const Settings: React.FC = () => {
                   error={errors.index_dir?.message}
                   element={
                     <Input
-                      {...register('index_dir', { required: t('settings.index_dir_required') ?? true })}
+                      {...register('index_dir', {
+                        required: t('settings.index_dir_required') ?? true
+                      })}
                       aria-invalid={errors.index_dir ? 'true' : 'false'}
                     />
                   }

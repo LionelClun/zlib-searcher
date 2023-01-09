@@ -16,16 +16,16 @@ import {
   Text
 } from '@chakra-ui/react';
 import { FilterFn, createColumnHelper } from '@tanstack/react-table';
+import React, { useContext } from 'react';
 
 import { Book } from '../scripts/searcher';
 import DataTable from './DataTable';
 import ExternalLink from './ExternalLink';
-import React, { useContext } from 'react';
+import RootContext from '../store';
 import { TbChevronUp } from 'react-icons/tb';
 import { filesize as formatFileSize } from 'filesize';
-import { useTranslation } from 'react-i18next';
-import RootContext from '../store';
 import getIpfsGateways from '../scripts/ipfs';
+import { useTranslation } from 'react-i18next';
 
 const columnHelper = createColumnHelper<Book>();
 
@@ -79,11 +79,10 @@ const BooksView: React.FC<BooksViewProps> = ({ books }) => {
   const { t } = useTranslation();
   const rootContext = useContext(RootContext);
 
-  async function initIpfsGateways() {
-    rootContext.ipfs_gateways = await getIpfsGateways();
-  };
   React.useEffect(() => {
-    initIpfsGateways()
+    getIpfsGateways().then((gateways) => {
+      rootContext.setIpfsGateways(gateways);
+    });
   }, []);
 
   const columns = React.useMemo(
@@ -220,7 +219,7 @@ const BooksView: React.FC<BooksViewProps> = ({ books }) => {
               <Divider />
               <CardBody>
                 <SimpleGrid columns={{ sm: 1, md: 3, lg: 4 }} spacing={{ base: 2, md: 4 }}>
-                  <Description name={`${t('book.id') ?? 'zlib/libgen id'}: `}>{id}</Description>
+                  <Description name={`${t('book.id') ?? 'ID'}: `}>{id}</Description>
                   <GridItem colSpan={{ sm: 1, md: 2, lg: 3 }}>
                     <Description name={`${t('book.ipfs_cid') ?? 'IPFS CID'}: `}>
                       {ipfs_cid}
@@ -253,9 +252,9 @@ const BooksView: React.FC<BooksViewProps> = ({ books }) => {
                 </SimpleGrid>
               </CardBody>
               <CardFooter flexDirection="column">
-                {rootContext.ipfs_gateways.length > 0 ?
+                {rootContext.ipfsGateways.length > 0 ? (
                   <SimpleGrid columns={{ sm: 2, md: 3, lg: 4, xl: 5 }} spacing={{ base: 2, md: 4 }}>
-                    {rootContext.ipfs_gateways.map((gateway) => (
+                    {rootContext.ipfsGateways.map((gateway) => (
                       <Button
                         as={ExternalLink}
                         href={downloadLinkFromIPFS(gateway, row.original)}
@@ -266,8 +265,7 @@ const BooksView: React.FC<BooksViewProps> = ({ books }) => {
                       </Button>
                     ))}
                   </SimpleGrid>
-                  : null
-                }
+                ) : null}
                 <Flex justify="flex-end">
                   <Button
                     variant="unstyled"

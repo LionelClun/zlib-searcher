@@ -11,7 +11,6 @@ import i18nResource from './i18n.json';
 import { initReactI18next } from 'react-i18next';
 import merge from 'lodash/merge';
 import theme from './theme';
-import RootContext, {initRootContext} from './store';
 
 const resources =
   import.meta.env.VITE_TAURI === '1'
@@ -33,9 +32,7 @@ const rootElement = document.getElementById('app')!;
 ReactDOM.createRoot(rootElement).render(
   <React.StrictMode>
     <ChakraProvider theme={theme}>
-      <RootContext.Provider value={initRootContext}>
-        <App />
-      </RootContext.Provider>
+      <App />
     </ChakraProvider>
   </React.StrictMode>
 );
